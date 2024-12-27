@@ -1,17 +1,17 @@
 #,Category,Item,Price,Availability
-1,Vegetarian,Veggie Burger,$8.99 ,25
+1,Vegetarian,Veggie Burger,$8.99 ,2
 2,Vegetarian,Veggie Wrap,$7.49 ,20
-3,Vegetarian,Grilled Cheese Sandwich,$5.99 ,30
-4,Vegetarian,Vegetable Stir Fry,$9.49 ,18
-5,Vegan,Vegan Buddha Bowl,$10.99 ,15
+3,Vegetarian,Grilled Cheese Sandwich,$5.99 ,1
+4,Vegetarian,Vegetable Stir Fry,$9.49 ,90
+5,Vegan,Vegan Buddha Bowl,$10.99 ,90
 6,Vegan,Vegan Tacos,$8.49 ,20
-7,Vegan,Vegan Quinoa Salad,$9.29 ,12
-8,Vegan,Vegan Chili,$7.99 ,88
-9,Gluten-Free,Gluten-Free Margherita Pizza,$11.49 ,10
+7,Vegan,Vegan Quinoa Salad,$9.29 ,1
+8,Vegan,Vegan Chili,$7.99 ,8
+9,Gluten-Free,Gluten-Free Margherita Pizza,$11.49 
 10,Gluten-Free,Grilled Chicken Salad (Gluten-Free),$10.99 ,18
 11,Gluten-Free,Gluten-Free Pancakes,$6.99 ,15
 12,Gluten-Free,Gluten-Free Pasta Primavera,$12.49 ,14
-13,Specialty,Classic Cheeseburger,$9.99 ,20
+13,Specialty,Classic Cheeseburger,$9.99 
 14,Specialty,BBQ Pulled Pork Sandwich,$9.49 ,15
 15,Specialty,Chicken Caesar Wrap,$8.99 ,25
 16,Specialty,Grilled Salmon Plate,$13.49 ,10
@@ -19,3 +19,4 @@
 18,Drinks,Fresh Fruit Smoothie,$5.99 ,20
 19,Drinks,Cappuccino,$3.49 ,25
 20,Drinks,Lemonade,$2.99 ,35
+21,Vegetarian,burger,$900,30
