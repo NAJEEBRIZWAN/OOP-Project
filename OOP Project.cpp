@@ -1,31 +1,203 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <vector>
 #include <string>
-
+#include <ctime>
+#include <vector>
+#include <unordered_set> 
 using namespace std;
 
-class Menu {
-protected:
-    string line;
+class Cafeteria {
+private:
+    string menuFileName = "Menu.csv";
+    string salesReportFileName = "sales_report.csv";
+    string customerFileName = "customers.csv";
+    int count;
     vector<string> row;
     vector<vector<string>> data;
-    string cell;
-    int menuItem = 20;
-    int id;
+    string line;
+    bool booll = true;
+    vector<string> customer;
+    bool usercheck;
+    vector<vector<string>> cus_data;
+    string line2;
+
+    unordered_set<string> customerIDs; 
 
 public:
-   
-    void clearScreen() {
-        #ifdef _WIN32
-            system("cls");
-        #else
-            system("clear"); 
-        #endif
+    Cafeteria() {
+        CSvToVector();
+        loadCustomerIDs(); 
     }
 
-    bool isDigit(const string& str) {
+    
+    void CSvToVector() {
+        ifstream File(menuFileName);
+        if (File.is_open()) {
+            while (getline(File, line)) {
+                row.clear();
+                stringstream ss(line);
+                while (getline(ss, line2)) {
+                    row.push_back(line2);
+                }
+                data.push_back(row);
+            }
+        }
+        File.close();
+    }
+
+   
+    void loadCustomerIDs() {
+        ifstream id(customerFileName);
+        if (!id.is_open()) {
+            cout << "Error opening customer file.\n";
+            return;
+        }
+
+        customerIDs.clear(); 
+        string line;
+        while (getline(id, line)) {
+            stringstream s(line);
+            string customerId;
+            getline(s, customerId, ','); 
+            customerIDs.insert(customerId); 
+        }
+        id.close();
+    }
+
+    
+    void addMenuItem() {
+        ofstream menuFile(menuFileName, ios::app);
+        if (!menuFile.is_open()) {
+            cout << "Error opening menu file.\n";
+            return;
+        }
+
+        string name, category;
+        float price;
+        int availability;
+
+        checkId();
+
+        cout << "Enter menu item name: ";
+        cin.ignore();
+        getline(cin, name);
+
+        string validCategories[] = {"Vegetarian", "Vegan", "Gluten-Free", "Specialty", "Drinks"};
+        bool validCategory = false;
+
+        while (!validCategory) {
+            cout << "Enter category (Vegetarian/Vegan/Gluten-Free/Specialty/Drinks): ";
+            getline(cin, category);
+
+            for (const string &validCat : validCategories) {
+                if (category == validCat) {
+                    validCategory = true;
+                    break;
+                }
+            }
+
+            if (!validCategory) {
+                cout << "Invalid category. Please enter a valid category.\n";
+            }
+        }
+
+        cout << "Enter price: ";
+        cin >> price;
+
+        cout << "Enter availability: ";
+        cin >> availability;
+
+        menuFile << count << "," << name << "," << category << "," << price << "," << availability << "\n";
+        menuFile.close();
+
+        cout << "Menu item added successfully.\n";
+        booll = true;
+        data.clear();
+        CSvToVector();
+    }
+
+    // Remove a menu item
+    void removeMenuItem() {
+        string name;
+        cout << "Enter the name of the item to remove: ";
+        cin.ignore();
+        getline(cin, name);
+
+        ifstream menuFile(menuFileName);
+        ofstream tempFile("temp_menu.csv");
+
+        if (!menuFile.is_open() || !tempFile.is_open()) {
+            cout << "Error opening files.\n";
+            return;
+        }
+
+        string line;
+        bool found = false;
+        while (getline(menuFile, line)) {
+            stringstream ss(line);
+            string id, menuName, category, price, availability;
+            getline(ss, id, ',');
+            getline(ss, menuName, ',');
+
+            if (menuName == name) {
+                found = true;
+                continue;
+            }
+            tempFile << line << "\n";
+        }
+
+        menuFile.close();
+        tempFile.close();
+
+        if (found) {
+            remove(menuFileName.c_str());
+            rename("temp_menu.csv", menuFileName.c_str());
+            cout << "Menu item removed successfully.\n";
+        } else {
+            remove("temp_menu.csv");
+            cout << "Item not found.\n";
+        }
+    }
+
+    
+    void displayMenu() {
+        ifstream menuFile(menuFileName);
+        if (!menuFile.is_open()) {
+            cout << "Error opening menu file.\n";
+            return;
+        }
+
+        string line;
+        cout << "Menu Items:\n";
+
+        string categories[] = {"Vegetarian", "Vegan", "Gluten-Free", "Specialty", "Drinks"};
+
+        for (const string &category : categories) {
+            cout << "\n" << category << ":\n";
+            menuFile.clear();
+            menuFile.seekg(0, ios::beg);
+
+            while (getline(menuFile, line)) {
+                stringstream ss(line);
+                string id, name, itemCategory, price, availability;
+                getline(ss, id, ',');
+                getline(ss, name, ',');
+                getline(ss, itemCategory, ',');
+                getline(ss, price, ',');
+                getline(ss, availability, ',');
+
+                if (itemCategory == category) {
+                    cout << id << ". " << name << " - $" << price << " (Available: " << availability << ")\n";
+                }
+            }
+        }
+
+        menuFile.close();
+    }
+
+    
+    bool isDigitsOnly(string& str) {
         for (char c : str) {
             if (!isdigit(c)) {
                 return false;
@@ -34,215 +206,220 @@ public:
         return true;
     }
 
-    void addMenuItem() {
-    clearScreen();
-    ofstream menuFile("Menu.csv", ios::app);
-    if (!menuFile.is_open()) {
-        cout << "Error opening menu file.\n";
-        return;
-    }
+   
+    void processOrder() {
+        string customerId;
+        cout << "Enter customer ID: ";
+        cin >> customerId;
 
-    string name, category;
-    float price;
-    int availability;
-
-    vector<string> validCategories = {"Vegetarian", "Vegan", "Gluten-Free", "Specialty", "Drinks"};
-
-    cout << "Enter menu item name: ";
-    cin.ignore();
-    getline(cin, name);
-
-    bool validCategory = false;
-    while (!validCategory) {
-        cout << "Enter category (Vegetarian/Vegan/Gluten-Free/Specialty/Drinks): ";
-        getline(cin, category);
-
-        for (const string& valid : validCategories) {
-            if (category == valid) {
-                validCategory = true;
-                break;
-            }
-        }
-
-        if (!validCategory) {
-            cout << "Invalid category. Please choose from the available options.\n";
-        }
-    }
-
-    cout << "Enter price: ";
-    cin >> price;
-
-    cout << "Enter availability: ";
-    cin >> availability;
-
-    menuItem++;  
-    menuFile << menuItem << "," <<category << "," <<  name << "," <<"$"<< price << "," << availability << "\n";
-    menuFile.close();
-
-    cout << "Menu item added successfully.\n";
-}
-
-
-    void updatestock() {
-        clearScreen(); 
-        cout << "Enter item ID for the item you want to update the stock: ";
-        cin >> id;
-
-        ifstream file("Menu.csv");
-        if (!file.is_open()) {
-            cout << "Error opening menu file.\n";
+        
+        if (customerIDs.find(customerId) == customerIDs.end()) {
+            cout << "Invalid or unregistered customer ID. Please register the customer first.\n";
             return;
         }
 
-        while (getline(file, line)) {
-            row.clear();
-            stringstream ss(line);
-            while (getline(ss, cell, ',')) {
-                row.push_back(cell);
-            }
-            data.push_back(row);
-        }
-        file.close();
+        cout << "Customer found. Proceeding with the order...\n";
 
-        for (size_t i = 0; i < data.size(); ++i) {
-            if (stoi(data[i][0]) == id) {
-                cout << "Current Stock: " << data[i][4] << endl;
-                cout << "Update the stock: ";
-                string stock;
-                while (true) {
-                    cin >> stock;
-                    if (isDigit(stock)) {
-                        data[i][4] = stock;
-                        break;
-                    } else {
-                        cout << "Invalid input. Please enter a valid number: ";
-                    }
-                }
-                break;
-            }
-        }
+        string itemName;
+        int quantity;
 
-        ofstream updateFile("Menu.csv");
-        if (updateFile.is_open()) {
-            for (const auto& row : data) {
-                for (size_t i = 0; i < row.size(); ++i) {
-                    updateFile << row[i];
-                    if (i < row.size() - 1) {
-                        updateFile << ",";
-                    }
-                }
-                updateFile << endl;
-            }
-            updateFile.close();
-        } else {
-            cout << "Failed to open file for writing.\n";
-        }
+        displayMenu(); 
+        cout << "Enter menu item name to order: ";
+        cin.ignore();
+        getline(cin, itemName);
 
-        cout << "Data updated successfully.\n";
-    }
+        cout << "Enter quantity: ";
+        cin >> quantity;
 
-    void displayMenu() {
-        clearScreen();
-        ifstream menuFile("Menu.csv");
-        if (!menuFile.is_open()) {
-            cout << "Error opening menu file.\n";
-            return;
-        }
-
-        cout << "Menu Items:\n";
-        while (getline(menuFile, line)) {
-            cout << line << endl;
-        }
-        menuFile.close();
-    }
-
-    void removeMenuItem() {
-        clearScreen(); 
-        cout << "Enter item ID for the item you want to remove: ";
-        cin >> id;
-
-        ifstream menuFile("Menu.csv");
-        ofstream tempFile("TempMenu.csv");
+        
+        ifstream menuFile(menuFileName);
+        ofstream tempFile("temp_menu.csv");
         if (!menuFile.is_open() || !tempFile.is_open()) {
-            cout << "Error opening files.\n";
+            cout << "Error opening menu files.\n";
             return;
         }
 
-        bool found = false;
+        bool itemFound = false;
+        float price = 0;
+
         while (getline(menuFile, line)) {
             stringstream ss(line);
-            string itemId;
+            string id, name, category, priceStr, availabilityStr;
+            getline(ss, id, ',');
+            getline(ss, name, ',');
+            getline(ss, category, ',');
+            getline(ss, priceStr, ',');
+            getline(ss, availabilityStr, ',');
 
-            if (!getline(ss, itemId, ',')) {
-                tempFile << line << endl;  
-                continue;
-            }
-
-            try {
-                int currentId = stoi(itemId);
-                if (currentId == id) {
-                    found = true;
-                    continue;  
+            if (name == itemName) {
+                itemFound = true;
+                price = stof(priceStr);
+                int availability = stoi(availabilityStr);
+                if (availability >= quantity) {
+                    availability -= quantity;
+                    tempFile << id << "," << name << "," << category << "," << priceStr << "," << availability << "\n";
+                } else {
+                    cout << "Insufficient stock for the item.\n";
+                    tempFile << line << "\n";
                 }
-            } catch (const invalid_argument&) {
-                tempFile << line << endl;
-                continue;  
-            } catch (const out_of_range&) {
-                tempFile << line << endl;
-                continue;  
+            } else {
+                tempFile << line << "\n";
             }
+        }
 
-            tempFile << line << endl;  
+        if (!itemFound) {
+            cout << "Item not found on the menu.\n";
         }
 
         menuFile.close();
         tempFile.close();
 
-        if (found) {
-            remove("Menu.csv");
-            rename("TempMenu.csv", "Menu.csv");
-            cout << "Menu item removed successfully.\n";
-        } else {
-            remove("TempMenu.csv");
-            cout << "Item not found.\n";
+        remove(menuFileName.c_str());
+        rename("temp_menu.csv", menuFileName.c_str());
+
+       
+        float totalPrice = price * quantity;
+        ofstream salesReportFile(salesReportFileName, ios::app);
+        if (!salesReportFile.is_open()) {
+            cout << "Error opening sales report file.\n";
+            return;
+        }
+
+        time_t now = time(0);
+        char *dt = ctime(&now);
+
+        salesReportFile << "Customer ID: " << customerId << ", Item: " << itemName
+                         << ", Quantity: " << quantity << ", Total: $" << totalPrice
+                         << ", Date: " << dt;
+
+        salesReportFile.close();
+
+        cout << "Order processed. Total: $" << totalPrice << "\n";
+        
+    }
+
+   
+    void registerCustomer() {
+        ofstream customerFile(customerFileName, ios::app);
+        if (!customerFile.is_open()) {
+            cout << "Error opening customer file.\n";
+            return;
+        }
+
+        string id;
+        string name, contact, dietary;
+
+        while (true) {
+            cout << "Enter customer ID: ";
+            cin >> id;
+            if (!isDigitsOnly(id)) {
+                cout<<"Its not digit"<<endl;
+                
+               
+            }
+			else if (customerIDs.find(id) != customerIDs.end()) {
+            cout << "use different ID It Is Already Present .\n";
+            
+        } 
+		else {
+                cout << "ID Accepted" << endl;
+                break;
+            }
+        }
+
+        cin.ignore();
+        cout << "Enter customer name: ";
+        getline(cin, name);
+
+        cout << "Enter customer contact: ";
+        getline(cin, contact);
+
+        cout << "Enter dietary preferences (Vegetarian/Vegan/Gluten-Free): ";
+        getline(cin, dietary);
+
+        customerFile << id << "," << name << "," << contact << "," << dietary << ","<<"0"<<"\n";
+        customerFile.close();
+
+       
+        customerIDs.insert(id);
+
+        cout << "Customer registered successfully.\n";
+    }
+
+   
+    void displayCustomers() {
+        ifstream customerFile(customerFileName);
+        if (!customerFile.is_open()) {
+            cout << "Error opening customer file.\n";
+            return;
+        }
+
+        string line;
+        cout << "Customer List:\n";
+        while (getline(customerFile, line)) {
+            cout << line << "\n";
+        }
+        customerFile.close();
+    }
+
+    
+    void checkId() {
+        for (int i = 1; booll; i++) {
+            cout << "Enter Menu ID: ";
+            cin >> count;
+            if (count == data.size()) {
+                cout << "Id is Correct" << endl;
+                booll = false;
+                break;
+            } else {
+                cout << "ID is already present or invalid. Current ID that you can use is " << data.size() << endl;
+            }
         }
     }
 };
 
 int main() {
-    Menu menu;
+    Cafeteria caf;
     int choice;
+
     do {
-       
-        cout << "\nMenu Management System\n";
+        cout << "\nCafeteria Management System\n";
         cout << "1. Add Menu Item\n";
-        cout << "2. Update Stock\n";
+        cout << "2. Remove Menu Item\n";
         cout << "3. Display Menu\n";
-        cout << "4. Remove Menu Item\n";
-        cout << "5. Exit\n";
+        cout << "4. Process Order\n";
+        cout << "5. Register New Customer\n";
+        cout << "6. Display All Customers\n";
+        cout << "7. Exit\n";
         cout << "Enter your choice: ";
         cin >> choice;
 
         switch (choice) {
             case 1:
-                menu.addMenuItem();
+                caf.addMenuItem();
                 break;
             case 2:
-                menu.updatestock();
+                caf.removeMenuItem();
                 break;
             case 3:
-                menu.displayMenu();
+                caf.displayMenu();
                 break;
             case 4:
-                menu.removeMenuItem();
+                caf.processOrder();
                 break;
             case 5:
+                caf.registerCustomer();
+                break;
+            case 6:
+                caf.displayCustomers();
+                break;
+            case 7:
                 cout << "Exiting...\n";
                 break;
             default:
                 cout << "Invalid choice. Please try again.\n";
         }
-    } while (choice != 5);
+    } while (choice != 7);
 
     return 0;
 }
