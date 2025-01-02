@@ -14,6 +14,7 @@ protected:
     string salesReportFileName = "sales_report.csv";
     string customerFileName = "customers.csv";
     int count;
+    int ayesha;
     vector<string> row;
     vector<vector<string>> data;
     string line;
